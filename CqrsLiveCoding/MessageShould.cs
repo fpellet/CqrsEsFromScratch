@@ -9,6 +9,43 @@ using Xunit;
 
 namespace CqrsLiveCoding
 {
+    public class QuackCounterShould
+    {
+        [Fact]
+        public void IncrementWhenMessageQuacked()
+        {
+            var counter = new QuackCounter();
+            counter.Handle(new MessageQuacked("A", "Hello"));
+
+            Check.That(counter.Nb).IsEqualTo(1);
+        }
+
+        [Fact]
+        public void DecrementWhenMessageDeleted()
+        {
+            var counter = new QuackCounter();
+            counter.Handle(new MessageQuacked("A", "Hello"));
+            counter.Handle(new MessageDeleted("A"));
+
+            Check.That(counter.Nb).IsEqualTo(0);
+        }
+    }
+
+    public class QuackCounter : IHandler<MessageQuacked>, IHandler<MessageDeleted>
+    {
+        public int Nb { get; private set; }
+
+        public void Handle(MessageQuacked messageQuacked)
+        {
+            Nb++;
+        }
+
+        public void Handle(MessageDeleted evt)
+        {
+            Nb--;
+        }
+    }
+
     public class TimelineShould
     {
         [Fact]
