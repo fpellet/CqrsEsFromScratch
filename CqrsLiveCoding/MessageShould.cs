@@ -9,6 +9,19 @@ using Xunit;
 
 namespace CqrsLiveCoding
 {
+    public class TimelineShould
+    {
+        [Fact]
+        public void AddMessageInTimelineWhenMessageQuacked()
+        {
+            var timeline = new Timeline();
+
+            timeline.Handle(new MessageQuacked("MessageA", "hello"));
+
+            Check.That(timeline.Messages).Contains(new TimelineMessage("hello"));
+        }
+    }
+
     public class MessageShould
     {
         [Fact]
