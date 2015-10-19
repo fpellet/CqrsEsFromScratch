@@ -26,6 +26,7 @@ namespace CqrsLiveCoding
         {
             var timeline = new Timeline();
             var eventsStore = new EventsStore();
+            eventsStore.Subscribe(timeline);
 
             Message.Quack(eventsStore, "Hello");
 
