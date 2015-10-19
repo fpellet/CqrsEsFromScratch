@@ -59,10 +59,24 @@ namespace CqrsLiveCoding
     public class Message
     {
         private string _id;
+        private bool _isDeleted;
 
-        public Message(MessageQuacked messageQuacked)
+        public Message(params object[] events)
         {
-            _id = messageQuacked.Id;
+            foreach (var @event in events)
+            {
+                Apply((dynamic) @event);
+            }
+        }
+
+        private void Apply(MessageQuacked evt)
+        {
+            _id = evt.Id;
+        }
+
+        private void Apply(MessageDeleted evt)
+        {
+            _isDeleted = true;
         }
 
         public static string Quack(List<object> eventsStore, string message)
@@ -75,6 +89,8 @@ namespace CqrsLiveCoding
 
         public void Delete(List<object> eventsStore)
         {
+            if (_isDeleted) return;
+
             eventsStore.Add(new MessageDeleted(_id));
         }
     }
