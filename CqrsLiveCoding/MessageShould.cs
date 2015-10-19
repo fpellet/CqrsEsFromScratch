@@ -34,6 +34,16 @@ namespace CqrsLiveCoding
         }
     }
 
+    public struct MessageDeleted
+    {
+        public string Id { get; private set; }
+
+        public MessageDeleted(string id)
+        {
+            Id = id;
+        }
+    }
+
     public class Message
     {
         public static string Quack(List<object> eventsStore, string message)
@@ -42,6 +52,11 @@ namespace CqrsLiveCoding
             eventsStore.Add(new MessageQuacked(id, message));
 
             return id;
+        }
+
+        public void Delete(List<object> eventsStore)
+        {
+            eventsStore.Add(new MessageDeleted());
         }
     }
 
