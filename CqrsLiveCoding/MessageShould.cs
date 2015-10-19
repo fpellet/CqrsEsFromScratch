@@ -14,36 +14,52 @@ namespace CqrsLiveCoding
         [Fact]
         public void RaiseMessageQuackedWhenQuackMessage()
         {
-            var eventsStore = new List<IDomainEvent>();
+            var eventsStore = new EventsStore();
 
             var id = Message.Quack(eventsStore, "Hello");
 
-            Check.That(eventsStore).ContainsExactly(new MessageQuacked(id, "Hello"));
+            Check.That(eventsStore.Events).ContainsExactly(new MessageQuacked(id, "Hello"));
         }
 
         [Fact]
         public void RaiseMessageDeletedWhenDeleteMessage()
         {
-            var eventsStore = new List<IDomainEvent>();
+            var eventsStore = new EventsStore();
             var messageId = "MessageA";
             var message = new Message(new MessageQuacked(messageId, "Hello"));
 
             message.Delete(eventsStore);
 
-            Check.That(eventsStore).ContainsExactly(new MessageDeleted(messageId));
+            Check.That(eventsStore.Events).ContainsExactly(new MessageDeleted(messageId));
         }
 
         [Fact]
         public void NotRaiseMessageDeletedWhenDeleteDeletedMessage()
         {
-            var eventsStore = new List<IDomainEvent>();
+            var eventsStore = new EventsStore();
             var messageId = "MessageA";
             var message = new Message(new MessageQuacked(messageId, "Hello"), new MessageDeleted(messageId));
 
             message.Delete(eventsStore);
 
-            Check.That(eventsStore).IsEmpty();
+            Check.That(eventsStore.Events).IsEmpty();
         }
+    }
+
+    public class EventsStore : IEventsStore
+    {
+        public IList<IDomainEvent> Events { get; } = new List<IDomainEvent>();
+
+
+        public void Push(IDomainEvent evt)
+        {
+            Events.Add(evt);
+        }
+    }
+
+    public interface IEventsStore
+    {
+        void Push(IDomainEvent evt);
     }
 
     public interface IDomainEvent
@@ -83,19 +99,19 @@ namespace CqrsLiveCoding
             _isDeleted = true;
         }
 
-        public static string Quack(List<IDomainEvent> eventsStore, string message)
+        public static string Quack(IEventsStore eventsStore, string message)
         {
             var id = Guid.NewGuid().ToString();
-            eventsStore.Add(new MessageQuacked(id, message));
+            eventsStore.Push(new MessageQuacked(id, message));
 
             return id;
         }
 
-        public void Delete(List<IDomainEvent> eventsStore)
+        public void Delete(IEventsStore eventsStore)
         {
             if (_isDeleted) return;
 
-            eventsStore.Add(new MessageDeleted(_id));
+            eventsStore.Push(new MessageDeleted(_id));
         }
     }
 
