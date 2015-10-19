@@ -14,7 +14,7 @@ namespace CqrsLiveCoding
         [Fact]
         public void RaiseMessageQuackedWhenQuackMessage()
         {
-            var eventsStore = new List<object>();
+            var eventsStore = new List<IDomainEvent>();
 
             var id = Message.Quack(eventsStore, "Hello");
 
@@ -24,7 +24,7 @@ namespace CqrsLiveCoding
         [Fact]
         public void RaiseMessageDeletedWhenDeleteMessage()
         {
-            var eventsStore = new List<object>();
+            var eventsStore = new List<IDomainEvent>();
             var messageId = "MessageA";
             var message = new Message(new MessageQuacked(messageId, "Hello"));
 
@@ -36,7 +36,7 @@ namespace CqrsLiveCoding
         [Fact]
         public void NotRaiseMessageDeletedWhenDeleteDeletedMessage()
         {
-            var eventsStore = new List<object>();
+            var eventsStore = new List<IDomainEvent>();
             var messageId = "MessageA";
             var message = new Message(new MessageQuacked(messageId, "Hello"), new MessageDeleted(messageId));
 
@@ -46,7 +46,11 @@ namespace CqrsLiveCoding
         }
     }
 
-    public struct MessageDeleted
+    public interface IDomainEvent
+    {
+    }
+
+    public struct MessageDeleted : IDomainEvent
     {
         public string Id { get; private set; }
 
@@ -61,7 +65,7 @@ namespace CqrsLiveCoding
         private string _id;
         private bool _isDeleted;
 
-        public Message(params object[] events)
+        public Message(params IDomainEvent[] events)
         {
             foreach (var @event in events)
             {
@@ -79,7 +83,7 @@ namespace CqrsLiveCoding
             _isDeleted = true;
         }
 
-        public static string Quack(List<object> eventsStore, string message)
+        public static string Quack(List<IDomainEvent> eventsStore, string message)
         {
             var id = Guid.NewGuid().ToString();
             eventsStore.Add(new MessageQuacked(id, message));
@@ -87,7 +91,7 @@ namespace CqrsLiveCoding
             return id;
         }
 
-        public void Delete(List<object> eventsStore)
+        public void Delete(List<IDomainEvent> eventsStore)
         {
             if (_isDeleted) return;
 
@@ -95,7 +99,7 @@ namespace CqrsLiveCoding
         }
     }
 
-    public struct MessageQuacked
+    public struct MessageQuacked : IDomainEvent
     {
         public string Id { get; private set; }
         public string Message { get; private set; }
