@@ -20,6 +20,18 @@ namespace CqrsLiveCoding
 
             Check.That(eventsStore).ContainsExactly(new MessageQuacked(id, "Hello"));
         }
+
+        [Fact]
+        public void RaiseMessageDeletedWhenDeleteMessage()
+        {
+            var eventsStore = new List<object>();
+            var messageId = "MessageA";
+            var message = new Message();
+
+            message.Delete(eventsStore);
+
+            Check.That(eventsStore).ContainsExactly(new MessageDeleted(messageId));
+        }
     }
 
     public class Message
