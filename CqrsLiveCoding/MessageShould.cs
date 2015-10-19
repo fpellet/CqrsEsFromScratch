@@ -97,7 +97,7 @@ namespace CqrsLiveCoding
         public IList<IDomainEvent> Events { get; } = new List<IDomainEvent>();
 
 
-        public void Push(IDomainEvent evt)
+        public void Push<TEvent>(TEvent evt) where TEvent: IDomainEvent
         {
             Events.Add(evt);
 
@@ -115,7 +115,7 @@ namespace CqrsLiveCoding
 
     public interface IEventsStore
     {
-        void Push(IDomainEvent evt);
+        void Push<TEvent>(TEvent evt) where TEvent : IDomainEvent;
     }
 
     public interface IDomainEvent
