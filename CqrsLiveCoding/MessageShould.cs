@@ -44,7 +44,17 @@ namespace CqrsLiveCoding
         }
     }
 
-    public class Timeline
+    public interface IHandler
+    {
+        
+    }
+
+    public interface IHandler<TEvent> : IHandler
+    {
+        void Handle(TEvent evt);
+    }
+
+    public class Timeline : IHandler<MessageQuacked>
     {
         public IList<TimelineMessage> Messages { get; } = new List<TimelineMessage>();
 
@@ -93,18 +103,29 @@ namespace CqrsLiveCoding
 
     public class EventsStore : IEventsStore
     {
+        private IList<IHandler> _handlers = new List<IHandler>(); 
         public IList<IDomainEvent> Events { get; } = new List<IDomainEvent>();
 
 
-        public void Push(IDomainEvent evt)
+        public void Push<TEvent>(TEvent evt) where TEvent: IDomainEvent
         {
             Events.Add(evt);
+
+            foreach (var handler in _handlers.OfType<IHandler<TEvent>>())
+            {
+                handler.Handle(evt);
+            }
+        }
+
+        public void Subscribe(IHandler handler)
+        {
+            _handlers.Add(handler);
         }
     }
 
     public interface IEventsStore
     {
-        void Push(IDomainEvent evt);
+        void Push<TEvent>(TEvent evt) where TEvent : IDomainEvent;
     }
 
     public interface IDomainEvent
