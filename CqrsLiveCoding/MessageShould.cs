@@ -32,6 +32,18 @@ namespace CqrsLiveCoding
 
             Check.That(eventsStore).ContainsExactly(new MessageDeleted(messageId));
         }
+
+        [Fact]
+        public void NotRaiseMessageDeletedWhenDeleteDeletedMessage()
+        {
+            var eventsStore = new List<object>();
+            var messageId = "MessageA";
+            var message = new Message(new MessageQuacked(messageId, "Hello"), new MessageDeleted(messageId));
+
+            message.Delete(eventsStore);
+
+            Check.That(eventsStore).IsEmpty();
+        }
     }
 
     public struct MessageDeleted
