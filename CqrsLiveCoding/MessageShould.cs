@@ -26,7 +26,7 @@ namespace CqrsLiveCoding
         {
             var eventsStore = new List<object>();
             var messageId = "MessageA";
-            var message = new Message();
+            var message = new Message(new MessageQuacked(messageId, "Hello"));
 
             message.Delete(eventsStore);
 
@@ -46,6 +46,13 @@ namespace CqrsLiveCoding
 
     public class Message
     {
+        private string _id;
+
+        public Message(MessageQuacked messageQuacked)
+        {
+            _id = messageQuacked.Id;
+        }
+
         public static string Quack(List<object> eventsStore, string message)
         {
             var id = Guid.NewGuid().ToString();
@@ -56,7 +63,7 @@ namespace CqrsLiveCoding
 
         public void Delete(List<object> eventsStore)
         {
-            eventsStore.Add(new MessageDeleted());
+            eventsStore.Add(new MessageDeleted(_id));
         }
     }
 
