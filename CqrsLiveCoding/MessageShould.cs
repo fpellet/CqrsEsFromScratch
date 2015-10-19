@@ -26,6 +26,7 @@ namespace CqrsLiveCoding
         {
             var timeline = new Timeline();
             var eventsStore = new EventsStore();
+            eventsStore.Subscribe<MessageQuacked>(timeline.Handle);
 
             Message.Quack(eventsStore, "Hello");
 
@@ -92,12 +93,23 @@ namespace CqrsLiveCoding
 
     public class EventsStore : IEventsStore
     {
+        private IDictionary<Type, Action<IDomainEvent>> _handler = new Dictionary<Type, Action<IDomainEvent>>();
         public IList<IDomainEvent> Events { get; } = new List<IDomainEvent>();
 
 
         public void Push(IDomainEvent evt)
         {
             Events.Add(evt);
+
+            if (_handler.ContainsKey(evt.GetType()))
+            {
+                _handler[evt.GetType()](evt);
+            }
+        }
+
+        public void Subscribe<TEvent>(Action<TEvent> handle) where TEvent: IDomainEvent
+        {
+            _handler.Add(typeof (TEvent), evt => handle((TEvent) evt));
         }
     }
 
