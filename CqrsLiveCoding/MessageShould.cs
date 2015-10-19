@@ -22,6 +22,26 @@ namespace CqrsLiveCoding
         }
     }
 
+    public struct TimelineMessage
+    {
+        public string Message { get; private set; }
+
+        public TimelineMessage(string message)
+        {
+            Message = message;
+        }
+    }
+
+    public class Timeline
+    {
+        public IList<TimelineMessage> Messages { get; } = new List<TimelineMessage>();
+
+        public void Handle(MessageQuacked evt)
+        {
+            Messages.Add(new TimelineMessage(evt.Message));
+        }
+    }
+
     public class MessageShould
     {
         [Fact]
