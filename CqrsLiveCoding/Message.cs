@@ -79,14 +79,6 @@ namespace CqrsLiveCoding
         }
 
         [Fact]
-        public void GetMessageContentWhenQuackMessage()
-        {
-            var message = Message.Quack(_eventsStore, Content);
-
-            Check.That(message.GetContent()).IsEqualTo(Content);
-        }
-
-        [Fact]
         public void RaiseMessageQuackedWhenQuackMessage()
         {
             var message = Message.Quack(_eventsStore, Content);
