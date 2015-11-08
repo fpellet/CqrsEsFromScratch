@@ -12,11 +12,11 @@ namespace CqrsLiveCoding
         private const string Id = "A";
         private const string Content = "Hello";
 
-        private readonly List<object> _eventsStore;
+        private readonly List<IMessageEvent> _eventsStore;
 
         public MessageShould()
         {
-            _eventsStore = new List<object>();
+            _eventsStore = new List<IMessageEvent>();
         }
 
         [Fact]
@@ -57,7 +57,12 @@ namespace CqrsLiveCoding
         }
     }
 
-    public struct MessageDeleted
+    public interface IMessageEvent
+    {
+        
+    }
+
+    public struct MessageDeleted : IMessageEvent
     {
         public string Id { get; private set; }
 
@@ -67,7 +72,7 @@ namespace CqrsLiveCoding
         }
     }
 
-    public struct MessageQuacked
+    public struct MessageQuacked : IMessageEvent
     {
         public string Id { get; private set; }
         public string Content { get; private set; }
@@ -85,7 +90,7 @@ namespace CqrsLiveCoding
         private string _id;
         private bool _isDeleted;
 
-        public Message(params object[] events)
+        public Message(params IMessageEvent[] events)
         {
             foreach (var @event in events)
             {
@@ -104,7 +109,7 @@ namespace CqrsLiveCoding
             _isDeleted = true;
         }
 
-        public static Message Quack(List<object> eventsStore, string content)
+        public static Message Quack(List<IMessageEvent> eventsStore, string content)
         {
             var id = Guid.NewGuid().ToString();
             var evt = new MessageQuacked(id, content);
@@ -123,7 +128,7 @@ namespace CqrsLiveCoding
             return _id;
         }
 
-        public void Delete(List<object> eventsStore)
+        public void Delete(List<IMessageEvent> eventsStore)
         {
             if (_isDeleted) return;
 
