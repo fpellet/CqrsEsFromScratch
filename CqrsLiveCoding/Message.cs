@@ -12,11 +12,11 @@ namespace CqrsLiveCoding
         private const string Id = "A";
         private const string Content = "Hello";
 
-        private readonly List<IMessageEvent> _eventsStore;
+        private readonly EventsStoreFake _eventsStore;
 
         public MessageShould()
         {
-            _eventsStore = new List<IMessageEvent>();
+            _eventsStore = new EventsStoreFake();
         }
 
         [Fact]
@@ -32,7 +32,7 @@ namespace CqrsLiveCoding
         {
             var message = Message.Quack(_eventsStore, Content);
 
-            Check.That(_eventsStore)
+            Check.That(_eventsStore.Events)
                 .ContainsExactly(new MessageQuacked(message.GetId(), Content));
         }
 
@@ -43,7 +43,7 @@ namespace CqrsLiveCoding
 
             message.Delete(_eventsStore);
 
-            Check.That(_eventsStore).ContainsExactly(new MessageDeleted(Id));
+            Check.That(_eventsStore.Events).ContainsExactly(new MessageDeleted(Id));
         }
 
         [Fact]
@@ -53,7 +53,22 @@ namespace CqrsLiveCoding
 
             message.Delete(_eventsStore);
 
-            Check.That(_eventsStore).IsEmpty();
+            Check.That(_eventsStore.Events).IsEmpty();
+        }
+    }
+
+    public interface IEventsStore
+    {
+        void Add(IMessageEvent evt);
+    }
+
+    public class EventsStoreFake : IEventsStore
+    {
+        public ICollection<IMessageEvent> Events { get; } = new List<IMessageEvent>();
+
+        public void Add(IMessageEvent evt)
+        {
+            Events.Add(evt);
         }
     }
 
@@ -109,7 +124,7 @@ namespace CqrsLiveCoding
             _isDeleted = true;
         }
 
-        public static Message Quack(List<IMessageEvent> eventsStore, string content)
+        public static Message Quack(IEventsStore eventsStore, string content)
         {
             var id = Guid.NewGuid().ToString();
             var evt = new MessageQuacked(id, content);
@@ -128,7 +143,7 @@ namespace CqrsLiveCoding
             return _id;
         }
 
-        public void Delete(List<IMessageEvent> eventsStore)
+        public void Delete(IEventsStore eventsStore)
         {
             if (_isDeleted) return;
 
