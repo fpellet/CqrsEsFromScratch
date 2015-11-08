@@ -21,6 +21,16 @@ namespace CqrsLiveCoding
 
             Check.That(timeline.Messages).Contains(new TimelineMessage(Content));
         }
+
+        [Fact]
+        public void AddMessageInTimelineWhenQuackMessage()
+        {
+            var timeline = new Timeline();
+
+            Message.Quack(new EventsStoreFake(), Content);
+
+            Check.That(timeline.Messages).Contains(new TimelineMessage(Content));
+        }
     }
 
     public struct TimelineMessage
