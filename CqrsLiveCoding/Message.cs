@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using NFluent;
 using Xunit;
 
@@ -9,9 +11,29 @@ namespace CqrsLiveCoding
         [Fact]
         public void GetMessageContentWhenQuackMessage()
         {
-            var message = Message.Quack("Hello");
+            var message = Message.Quack(new List<object>(), "Hello");
 
             Check.That(message.GetContent()).IsEqualTo("Hello");
+        }
+
+        [Fact]
+        public void RaiseMessageQuackedWhenQuackMessage()
+        {
+            var eventsStore = new List<object>();
+
+            Message.Quack(eventsStore, "Hello");
+
+            Check.That(eventsStore).ContainsExactly(new MessageQuacked("Hello"));
+        }
+    }
+
+    public struct MessageQuacked
+    {
+        public string Content { get; private set; }
+
+        public MessageQuacked(string content)
+        {
+            Content = content;
         }
     }
 
@@ -24,8 +46,10 @@ namespace CqrsLiveCoding
             _content = content;
         }
 
-        public static Message Quack(string content)
+        public static Message Quack(List<object> eventsStore, string content)
         {
+            eventsStore.Add(new MessageQuacked(content));
+
             return new Message(content);
         }
 
