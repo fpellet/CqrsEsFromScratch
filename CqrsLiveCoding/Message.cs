@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using NFluent;
 using Xunit;
+using Xunit.Sdk;
 
 namespace CqrsLiveCoding
 {
@@ -44,6 +45,16 @@ namespace CqrsLiveCoding
 
             Check.That(_eventsStore).ContainsExactly(new MessageDeleted(Id));
         }
+
+        [Fact]
+        public void NotRaiseMessageDeletedWhenDeleteDeletedMessage()
+        {
+            var message = new Message(new MessageQuacked(Id, Content), new MessageDeleted(Id));
+
+            message.Delete(_eventsStore);
+
+            Check.That(_eventsStore).IsEmpty();
+        }
     }
 
     public struct MessageDeleted
@@ -70,13 +81,27 @@ namespace CqrsLiveCoding
 
     public class Message
     {
-        private readonly string _content;
+        private string _content;
         private string _id;
+        private bool _isDeleted;
 
-        public Message(MessageQuacked evt)
+        public Message(params object[] events)
+        {
+            foreach (var @event in events)
+            {
+                Apply((dynamic)@event);
+            }
+        }
+
+        private void Apply(MessageQuacked evt)
         {
             _id = evt.Id;
             _content = evt.Content;
+        }
+
+        private void Apply(MessageDeleted evt)
+        {
+            _isDeleted = true;
         }
 
         public static Message Quack(List<object> eventsStore, string content)
@@ -100,6 +125,8 @@ namespace CqrsLiveCoding
 
         public void Delete(List<object> eventsStore)
         {
+            if (_isDeleted) return;
+
             eventsStore.Add(new MessageDeleted(_id));
         }
     }
