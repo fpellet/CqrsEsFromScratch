@@ -7,6 +7,39 @@ using Xunit.Sdk;
 
 namespace CqrsLiveCoding
 {
+    public class TimelineShould
+    {
+        [Fact]
+        public void AddMessageinTimelineWhenMessageQuacked()
+        {
+            var timeline = new Timeline();
+
+            timeline.Handle(new MessageQuacked("A", "Hello"));
+
+            Check.That(timeline.Messages).Contains(new TimelineMessage("Hello"));
+        }
+    }
+
+    public struct TimelineMessage
+    {
+        public string Content { get; private set; }
+
+        public TimelineMessage(string content)
+        {
+            Content = content;
+        }
+    }
+
+    public class Timeline
+    {
+        public ICollection<TimelineMessage> Messages { get; } = new List<TimelineMessage>();
+
+        public void Handle(MessageQuacked evt)
+        {
+            Messages.Add(new TimelineMessage(evt.Content));
+        }
+    }
+
     public class MessageShould
     {
         private const string Id = "A";
