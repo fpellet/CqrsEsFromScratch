@@ -7,6 +7,31 @@ using Xunit.Sdk;
 
 namespace CqrsLiveCoding
 {
+    public class QuackCounterShould
+    {
+        private const string Id = "A";
+        private const string Content = "Hello";
+
+        [Fact]
+        public void IncrementWhenMessageQuacked()
+        {
+            var counter = new QuackCounter();
+            counter.Handle(new MessageQuacked(Id, Content));
+
+            Check.That(counter.Nb).IsEqualTo(1);
+        }
+    }
+
+    public class QuackCounter
+    {
+        public int Nb { get; private set; }
+
+        public void Handle(MessageQuacked messageQuacked)
+        {
+            Nb++;
+        }
+    }
+
     public class TimelineShould
     {
         [Fact]
