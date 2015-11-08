@@ -8,34 +8,41 @@ namespace CqrsLiveCoding
 {
     public class MessageShould
     {
+        private const string Id = "A";
+        private const string Content = "Hello";
+
+        private readonly List<object> _eventsStore;
+
+        public MessageShould()
+        {
+            _eventsStore = new List<object>();
+        }
+
         [Fact]
         public void GetMessageContentWhenQuackMessage()
         {
-            var message = Message.Quack(new List<object>(), "Hello");
+            var message = Message.Quack(_eventsStore, Content);
 
-            Check.That(message.GetContent()).IsEqualTo("Hello");
+            Check.That(message.GetContent()).IsEqualTo(Content);
         }
 
         [Fact]
         public void RaiseMessageQuackedWhenQuackMessage()
         {
-            var eventsStore = new List<object>();
+            var message = Message.Quack(_eventsStore, Content);
 
-            var message = Message.Quack(eventsStore, "Hello");
-
-            Check.That(eventsStore)
-                .ContainsExactly(new MessageQuacked(message.GetId(), "Hello"));
+            Check.That(_eventsStore)
+                .ContainsExactly(new MessageQuacked(message.GetId(), Content));
         }
 
         [Fact]
         public void RaiseMessageDeletedWhenDeleteMesage()
         {
-            var eventsStore = new List<object>();
-            var message = new Message(new MessageQuacked("A", "Hello"));
+            var message = new Message(new MessageQuacked(Id, Content));
 
-            message.Delete(eventsStore);
+            message.Delete(_eventsStore);
 
-            Check.That(eventsStore).ContainsExactly(new MessageDeleted("A"));
+            Check.That(_eventsStore).ContainsExactly(new MessageDeleted(Id));
         }
     }
 
