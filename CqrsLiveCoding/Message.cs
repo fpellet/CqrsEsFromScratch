@@ -9,14 +9,17 @@ namespace CqrsLiveCoding
 {
     public class TimelineShould
     {
+        private const string Id = "A";
+        private const string Content = "Hello";
+
         [Fact]
         public void AddMessageinTimelineWhenMessageQuacked()
         {
             var timeline = new Timeline();
 
-            timeline.Handle(new MessageQuacked("A", "Hello"));
+            timeline.Handle(new MessageQuacked(Id, Content));
 
-            Check.That(timeline.Messages).Contains(new TimelineMessage("Hello"));
+            Check.That(timeline.Messages).Contains(new TimelineMessage(Content));
         }
     }
 
