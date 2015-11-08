@@ -21,18 +21,21 @@ namespace CqrsLiveCoding
         {
             var eventsStore = new List<object>();
 
-            Message.Quack(eventsStore, "Hello");
+            var message = Message.Quack(eventsStore, "Hello");
 
-            Check.That(eventsStore).ContainsExactly(new MessageQuacked("Hello"));
+            Check.That(eventsStore)
+                .ContainsExactly(new MessageQuacked(message.GetId(), "Hello"));
         }
     }
 
     public struct MessageQuacked
     {
+        public string Id { get; private set; }
         public string Content { get; private set; }
 
-        public MessageQuacked(string content)
+        public MessageQuacked(string id, string content)
         {
+            Id = id;
             Content = content;
         }
     }
@@ -40,22 +43,31 @@ namespace CqrsLiveCoding
     public class Message
     {
         private readonly string _content;
+        private string _id;
 
-        private Message(string content)
+        private Message(MessageQuacked evt)
         {
-            _content = content;
+            _id = evt.Id;
+            _content = evt.Content;
         }
 
         public static Message Quack(List<object> eventsStore, string content)
         {
-            eventsStore.Add(new MessageQuacked(content));
+            var id = Guid.NewGuid().ToString();
+            var evt = new MessageQuacked(id, content);
+            eventsStore.Add(evt);
 
-            return new Message(content);
+            return new Message(evt);
         }
 
         public string GetContent()
         {
             return _content;
+        }
+
+        public string GetId()
+        {
+            return _id;
         }
     }
 }
