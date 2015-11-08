@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using NFluent;
 using Xunit;
 using Xunit.Sdk;
@@ -45,7 +46,17 @@ namespace CqrsLiveCoding
         }
     }
 
-    public class Timeline
+    public interface IEventHander
+    {
+        
+    }
+
+    public interface IEventHandler<TEvent> : IEventHander
+    {
+        void Handle(TEvent evt);
+    }
+
+    public class Timeline : IEventHandler<MessageQuacked>
     {
         public ICollection<TimelineMessage> Messages { get; } = new List<TimelineMessage>();
 
@@ -107,27 +118,27 @@ namespace CqrsLiveCoding
 
     public interface IEventsStore
     {
-        void Add(IMessageEvent evt);
+        void Add<TEvent>(TEvent evt) where TEvent : IMessageEvent;
     }
 
     public class EventsStoreFake : IEventsStore
     {
-        private Timeline _timeline;
+        private IList<IEventHander> _handlers = new List<IEventHander>();
         public ICollection<IMessageEvent> Events { get; } = new List<IMessageEvent>();
 
-        public void Add(IMessageEvent evt)
+        public void Add<TEvent>(TEvent evt) where TEvent: IMessageEvent
         {
             Events.Add(evt);
 
-            if (evt is MessageQuacked)
+            foreach (var handler in _handlers.OfType<IEventHandler<TEvent>>())
             {
-                _timeline.Handle((MessageQuacked)evt);
+                handler.Handle(evt);
             }
         }
 
-        public void Subscribe(Timeline timeline)
+        public void Subscribe(IEventHander handler)
         {
-            _timeline = timeline;
+            _handlers.Add(handler);
         }
     }
 
