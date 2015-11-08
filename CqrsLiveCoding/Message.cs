@@ -26,8 +26,10 @@ namespace CqrsLiveCoding
         public void AddMessageInTimelineWhenQuackMessage()
         {
             var timeline = new Timeline();
+            var eventsStore = new EventsStoreFake();
+            eventsStore.Subscribe(timeline);
 
-            Message.Quack(new EventsStoreFake(), Content);
+            Message.Quack(eventsStore, Content);
 
             Check.That(timeline.Messages).Contains(new TimelineMessage(Content));
         }
@@ -110,11 +112,22 @@ namespace CqrsLiveCoding
 
     public class EventsStoreFake : IEventsStore
     {
+        private Timeline _timeline;
         public ICollection<IMessageEvent> Events { get; } = new List<IMessageEvent>();
 
         public void Add(IMessageEvent evt)
         {
             Events.Add(evt);
+
+            if (evt is MessageQuacked)
+            {
+                _timeline.Handle((MessageQuacked)evt);
+            }
+        }
+
+        public void Subscribe(Timeline timeline)
+        {
+            _timeline = timeline;
         }
     }
 
