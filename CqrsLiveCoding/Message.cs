@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using NFluent;
 using Xunit;
 using Xunit.Sdk;
@@ -26,8 +27,10 @@ namespace CqrsLiveCoding
         public void AddMessageInTimelineWhenQuackMessage()
         {
             var timeline = new Timeline();
+            var eventsStore = new EventsStoreFake();
+            eventsStore.Subscribe(timeline);
 
-            Message.Quack(new EventsStoreFake(), Content);
+            Message.Quack(eventsStore, Content);
 
             Check.That(timeline.Messages).Contains(new TimelineMessage(Content));
         }
@@ -43,7 +46,7 @@ namespace CqrsLiveCoding
         }
     }
 
-    public class Timeline
+    public class Timeline : IEventHandler<MessageQuacked>
     {
         public ICollection<TimelineMessage> Messages { get; } = new List<TimelineMessage>();
 
@@ -105,16 +108,38 @@ namespace CqrsLiveCoding
 
     public interface IEventsStore
     {
-        void Add(IMessageEvent evt);
+        void Add<TEvent>(TEvent evt) where TEvent : IMessageEvent;
+    }
+
+    public interface IEventHandler
+    {
+        
+    }
+
+    public interface IEventHandler<TEvent> : IEventHandler
+        where TEvent: IMessageEvent
+    {
+        void Handle(TEvent evt);
     }
 
     public class EventsStoreFake : IEventsStore
     {
+        private readonly ICollection<IEventHandler> _handlers = new List<IEventHandler>();
         public ICollection<IMessageEvent> Events { get; } = new List<IMessageEvent>();
 
-        public void Add(IMessageEvent evt)
+        public void Add<TEvent>(TEvent evt) where TEvent: IMessageEvent
         {
             Events.Add(evt);
+
+            foreach (var handler in _handlers.OfType<IEventHandler<TEvent>>())
+            {
+                handler.Handle(evt);
+            }
+        }
+
+        public void Subscribe(IEventHandler handler)
+        {
+            _handlers.Add(handler);
         }
     }
 
