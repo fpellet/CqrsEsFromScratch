@@ -26,6 +26,27 @@ namespace CqrsLiveCoding
             Check.That(eventsStore)
                 .ContainsExactly(new MessageQuacked(message.GetId(), "Hello"));
         }
+
+        [Fact]
+        public void RaiseMessageDeletedWhenDeleteMesage()
+        {
+            var eventsStore = new List<object>();
+            var message = new Message(new MessageQuacked("A", "Hello"));
+
+            message.Delete(eventsStore);
+
+            Check.That(eventsStore).ContainsExactly(new MessageDeleted("A"));
+        }
+    }
+
+    public struct MessageDeleted
+    {
+        public string Id { get; private set; }
+
+        public MessageDeleted(string id)
+        {
+            Id = id;
+        }
     }
 
     public struct MessageQuacked
@@ -45,7 +66,7 @@ namespace CqrsLiveCoding
         private readonly string _content;
         private string _id;
 
-        private Message(MessageQuacked evt)
+        public Message(MessageQuacked evt)
         {
             _id = evt.Id;
             _content = evt.Content;
@@ -68,6 +89,11 @@ namespace CqrsLiveCoding
         public string GetId()
         {
             return _id;
+        }
+
+        public void Delete(List<object> eventsStore)
+        {
+            eventsStore.Add(new MessageDeleted(_id));
         }
     }
 }
