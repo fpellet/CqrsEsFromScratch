@@ -122,6 +122,21 @@ namespace CqrsLiveCoding
         }
     }
 
+    public class MixterShould
+    {
+        [Fact]
+        public void UpdateTimelineWhenQuackMessage()
+        {
+            var timeline = new Timeline();
+            var eventsPublisher = new EventsPublisher(new EventsStoreFake());
+            eventsPublisher.Subscribe(timeline);
+
+            Message.Quack(eventsPublisher, "Hello");
+
+            Check.That(timeline.Messages).ContainsExactly(new TimelineMessage("Hello"));
+        }
+    }
+
     public class TimelineShould
     {
         [Fact]
