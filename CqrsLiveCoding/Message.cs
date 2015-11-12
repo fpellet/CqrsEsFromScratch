@@ -53,14 +53,6 @@ namespace CqrsLiveCoding
         }
 
         [Fact]
-        public void GetMessageContentWhenQuackMessage()
-        {
-            var message = Message.Quack(_eventsStore, Content);
-
-            Check.That(message.GetContent()).IsEqualTo(Content);
-        }
-
-        [Fact]
         public void RaiseMessageQuackedWhenQuackMessage()
         {
             var message = Message.Quack(_eventsStore, Content);
@@ -134,7 +126,6 @@ namespace CqrsLiveCoding
 
     public class Message
     {
-        private string _content;
         private string _id;
         private bool _isDeleted;
 
@@ -149,7 +140,6 @@ namespace CqrsLiveCoding
         private void Apply(MessageQuacked evt)
         {
             _id = evt.Id;
-            _content = evt.Content;
         }
 
         private void Apply(MessageDeleted evt)
@@ -164,11 +154,6 @@ namespace CqrsLiveCoding
             eventsStore.Add(evt);
 
             return new Message(evt);
-        }
-
-        public string GetContent()
-        {
-            return _content;
         }
 
         public string GetId()
