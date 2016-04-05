@@ -5,6 +5,21 @@ using Xunit;
 
 namespace CqrsLiveCoding
 {
+    public class MixterShould
+    {
+        [Fact]
+        public void UpdateTimelineWhenQuackMessage()
+        {
+            var timeline = new Timeline();
+            var eventsBus = new EventsBus(new EventsStoreFake());
+            eventsBus.Subscribe(timeline);
+
+            Message.Quack(eventsBus, "Hello");
+
+            Check.That(timeline.Messages).ContainsExactly(new TimelineMessage("Hello"));
+        }
+    }
+
     public class EventsBusShould
     {
         [Fact]
@@ -146,7 +161,7 @@ namespace CqrsLiveCoding
         }
     }
 
-    public class Timeline
+    public class Timeline : IDomainEventHandler<MessageQuacked>
     {
         public IList<TimelineMessage> Messages { get; } = new List<TimelineMessage>();
 
