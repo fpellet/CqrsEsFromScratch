@@ -1,11 +1,99 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using NFluent;
 using Xunit;
 
 namespace CqrsLiveCoding
 {
+    public class EventsBusShould
+    {
+        [Fact]
+        public void StoreEventsWhenPublishEvent()
+        {
+            var eventsStoreFake = new EventsStoreFake();
+            var eventsPublisher = new EventsBus(eventsStoreFake);
+            var evt = new MessageQuacked("Hello");
+
+            eventsPublisher.Publish(evt);
+
+            Check.That(eventsStoreFake.Historic).ContainsExactly(evt);
+        }
+
+        [Fact]
+        public void CallHandlersWhenPublishEvent()
+        {
+            var handler1 = new EventHandlerFake<MessageQuacked>();
+            var handler2 = new EventHandlerFake<MessageQuacked>();
+            var handler3 = new EventHandlerFake<MessageDeleted>();
+            var eventsPublisher = new EventsBus(new EventsStoreFake());
+            var evt = new MessageQuacked("Hello");
+            eventsPublisher.Subscribe(handler1);
+            eventsPublisher.Subscribe(handler2);
+            eventsPublisher.Subscribe(handler3);
+
+            eventsPublisher.Publish(evt);
+
+            Check.That(handler1.Event).IsEqualTo(evt);
+            Check.That(handler2.Event).IsEqualTo(evt);
+            Check.That(handler3.Event).IsNull();
+        }
+
+        private class EventHandlerFake<TEvent> : IDomainEventHandler<TEvent>
+            where TEvent : IDomainEvent
+        {
+            public IDomainEvent Event { get; private set; }
+
+            public void When(TEvent evt)
+            {
+                Event = evt;
+            }
+        }
+    }
+
+    public interface IDomainEventHandler
+    {
+
+    }
+
+    public interface IDomainEventHandler<in TEvent> : IDomainEventHandler
+        where TEvent : IDomainEvent
+    {
+        void When(TEvent evt);
+    }
+
+    public interface IEventsPublisher
+    {
+        void Publish<TEvent>(TEvent evt)
+            where TEvent : IDomainEvent;
+    }
+
+    public class EventsBus : IEventsPublisher
+    {
+        private readonly IEventsStore _eventsStore;
+        private readonly IList<IDomainEventHandler> _handlers = new List<IDomainEventHandler>();
+
+        public EventsBus(IEventsStore eventsStore)
+        {
+            _eventsStore = eventsStore;
+        }
+
+        public void Subscribe(IDomainEventHandler handler)
+        {
+            _handlers.Add(handler);
+        }
+
+        public void Publish<TEvent>(TEvent evt)
+            where TEvent : IDomainEvent
+        {
+            _eventsStore.Add(evt);
+
+            foreach (var handler in _handlers.OfType<IDomainEventHandler<TEvent>>())
+            {
+                handler.When(evt);
+            }
+        }
+    }
+
     public class QuackCounterShould
     {
         [Fact]
@@ -80,12 +168,19 @@ namespace CqrsLiveCoding
 
     public class MessageShould
     {
-        private readonly EventsStoreFake _eventsStore = new EventsStoreFake();
+        private readonly EventsStoreFake _eventsStore;
+        private readonly IEventsPublisher _eventsPublisher;
+
+        public MessageShould()
+        {
+            _eventsStore = new EventsStoreFake();
+            _eventsPublisher = new EventsBus(_eventsStore);
+        }
 
         [Fact]
         public void RaiseMessageQuackWhenQuackMessage()
         {
-            Message.Quack(_eventsStore, "Hello");
+            Message.Quack(_eventsPublisher, "Hello");
 
             Check.That(_eventsStore.Historic).ContainsExactly(new MessageQuacked("Hello"));
         }
@@ -93,9 +188,9 @@ namespace CqrsLiveCoding
         [Fact]
         public void RaiseMessageDeletedWhenDeleteMessage()
         {
-            var message = Message.Quack(_eventsStore, "Hello");
+            var message = Message.Quack(_eventsPublisher, "Hello");
 
-            message.Delete(_eventsStore);
+            message.Delete(_eventsPublisher);
 
             Check.That(_eventsStore.Historic).Contains(new MessageDeleted());
         }
@@ -107,7 +202,7 @@ namespace CqrsLiveCoding
             _eventsStore.Add(new MessageDeleted());
             var message = new Message(_eventsStore.Historic);
 
-            message.Delete(_eventsStore);
+            message.Delete(_eventsPublisher);
 
             Check.That(_eventsStore.Historic.OfType<MessageDeleted>()).HasSize(1);
         }
@@ -115,10 +210,10 @@ namespace CqrsLiveCoding
         [Fact]
         public void ApplyEventsOnSelf()
         {
-            var message = Message.Quack(_eventsStore, "Hello");
-            message.Delete(_eventsStore);
+            var message = Message.Quack(_eventsPublisher, "Hello");
+            message.Delete(_eventsPublisher);
 
-            message.Delete(_eventsStore);
+            message.Delete(_eventsPublisher);
 
             Check.That(_eventsStore.Historic.OfType<MessageDeleted>()).HasSize(1);
         }
@@ -134,7 +229,7 @@ namespace CqrsLiveCoding
 
     public struct MessageQuacked : IDomainEvent
     {
-        public string Content { get; private set; }
+        public string Content { get; }
 
         public MessageQuacked(string content)
         {
@@ -177,20 +272,20 @@ namespace CqrsLiveCoding
             _isDeleted = true;
         }
 
-        public static Message Quack(IEventsStore eventsStore, string content)
+        public static Message Quack(IEventsPublisher eventsPublisher, string content)
         {
             var evt = new MessageQuacked(content);
-            eventsStore.Add(evt);
+            eventsPublisher.Publish(evt);
 
             return new Message(new IDomainEvent[]{evt});
         }
 
-        public void Delete(IEventsStore eventsStore)
+        public void Delete(IEventsPublisher eventsPublisher)
         {
             if (_isDeleted) return;
 
             var evt = new MessageDeleted();
-            eventsStore.Add(evt);
+            eventsPublisher.Publish(evt);
             Apply(evt);
         }
     }
