@@ -42,6 +42,19 @@ namespace CqrsLiveCoding
 
             Check.That(history.OfType<MessageDeleted>()).HasSize(1);
         }
+
+        [Fact]
+        public void NotRaiseDeletedWhenTwiceDeleteMessage()
+        {
+            var history = new List<object>();
+            history.Add(new MessageQuacked("Hello"));
+            var message = new Message(history);
+
+            message.Delete(history);
+            message.Delete(history);
+
+            Check.That(history.OfType<MessageDeleted>()).HasSize(1);
+        }
     }
 
     public struct MessageDeleted
@@ -87,7 +100,9 @@ namespace CqrsLiveCoding
         {
             if (_isDeleted) return;
 
-            history.Add(new MessageDeleted());
+            var evt = new MessageDeleted();
+            history.Add(evt);
+            Apply(evt);
         }
     }
 }
