@@ -11,7 +11,7 @@ namespace CqrsLiveCoding
         [Fact]
         public void RaiseMessageQuackWhenQuackMessage()
         {
-            var history = new List<object>();
+            var history = new List<IDomainEvent>();
 
             Message.Quack(history, "Hello");
 
@@ -21,7 +21,7 @@ namespace CqrsLiveCoding
         [Fact]
         public void RaiseMessageDeletedWhenDeleteMessage()
         {
-            var history = new List<object>();
+            var history = new List<IDomainEvent>();
             history.Add(new MessageQuacked("Hello"));
             var message = new Message(history);
 
@@ -33,7 +33,7 @@ namespace CqrsLiveCoding
         [Fact]
         public void NotRaiseMessageDeletedWhenDeleteDeletedMessage()
         {
-            var history = new List<object>();
+            var history = new List<IDomainEvent>();
             history.Add(new MessageQuacked("Hello"));
             history.Add(new MessageDeleted());
             var message = new Message(history);
@@ -46,7 +46,7 @@ namespace CqrsLiveCoding
         [Fact]
         public void NotRaiseDeletedWhenTwiceDeleteMessage()
         {
-            var history = new List<object>();
+            var history = new List<IDomainEvent>();
             history.Add(new MessageQuacked("Hello"));
             var message = new Message(history);
 
@@ -57,11 +57,15 @@ namespace CqrsLiveCoding
         }
     }
 
-    public struct MessageDeleted
+    public interface IDomainEvent
     {
     }
 
-    public struct MessageQuacked
+    public struct MessageDeleted : IDomainEvent
+    {
+    }
+
+    public struct MessageQuacked : IDomainEvent
     {
         public string Content { get; private set; }
 
@@ -75,7 +79,7 @@ namespace CqrsLiveCoding
     {
         private bool _isDeleted = false;
 
-        public Message(IEnumerable<object> history)
+        public Message(IEnumerable<IDomainEvent> history)
         {
             foreach (var evt in history)
             {
@@ -91,12 +95,12 @@ namespace CqrsLiveCoding
             _isDeleted = true;
         }
 
-        public static void Quack(List<object> history, string content)
+        public static void Quack(List<IDomainEvent> history, string content)
         {
             history.Add(new MessageQuacked(content));
         }
 
-        public void Delete(List<object> history)
+        public void Delete(List<IDomainEvent> history)
         {
             if (_isDeleted) return;
 
