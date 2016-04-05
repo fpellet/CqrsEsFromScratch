@@ -17,6 +17,17 @@ namespace CqrsLiveCoding
 
             Check.That(counter.QuackNb).IsEqualTo(1);
         }
+
+        [Fact]
+        public void DecrementWhenMessageDeleted()
+        {
+            var counter = new QuackCounter();
+            counter.When(new MessageQuacked("Hello"));
+
+            counter.When(new MessageDeleted());
+
+            Check.That(counter.QuackNb).IsEqualTo(0);
+        }
     }
 
     public class QuackCounter
@@ -26,6 +37,11 @@ namespace CqrsLiveCoding
         public void When(MessageQuacked evt)
         {
             QuackNb++;
+        }
+
+        public void When(MessageDeleted evt)
+        {
+            QuackNb--;
         }
     }
 
