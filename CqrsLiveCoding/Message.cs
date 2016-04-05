@@ -41,6 +41,18 @@ namespace CqrsLiveCoding
 
             Check.That(eventsStore.OfType<MessageDeleted>()).HasSize(1);
         }
+
+        [Fact]
+        public void ApplyEventsOnSelf()
+        {
+            var eventsStore = new List<object>();
+            var message = Message.Quack(eventsStore, "Hello");
+            message.Delete(eventsStore);
+
+            message.Delete(eventsStore);
+
+            Check.That(eventsStore.OfType<MessageDeleted>()).HasSize(1);
+        }
     }
 
     public struct MessageDeleted
@@ -89,7 +101,9 @@ namespace CqrsLiveCoding
         {
             if (_isDeleted) return;
 
-            eventsStore.Add(new MessageDeleted());
+            var evt = new MessageDeleted();
+            eventsStore.Add(evt);
+            Apply(evt);
         }
     }
 }
