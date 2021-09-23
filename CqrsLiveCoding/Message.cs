@@ -5,6 +5,21 @@ using Xunit;
 
 namespace CqrsLiveCoding
 {
+    public class MixterShould
+    {
+        [Fact]
+        public void UpdateTimelineWhenQuackMessage()
+        {
+            var timeline = new Timeline();
+            var eventsBus = new EventsBus(new EventsStreamFake());
+            eventsBus.Subscribe(timeline);
+            
+            Message.Quack(eventsBus, "Hello");
+
+            Check.That(timeline.Messages).ContainsExactly(new TimelineMessage("Hello"));
+        }
+    }
+    
     public class EventsBusShould
     {
         [Fact]
@@ -105,13 +120,13 @@ namespace CqrsLiveCoding
         }
     }
 
-    public class Timeline
+    public class Timeline : IDomainEventHandler<MessageQuacked>
     {
         public IList<TimelineMessage> Messages { get; } = new List<TimelineMessage>();
         
         public void When(MessageQuacked evt)
         {
-            Messages.Add(new TimelineMessage(evt.Message));
+            Messages.Add(new TimelineMessage(evt.Content));
         }
     }
 
@@ -244,11 +259,11 @@ namespace CqrsLiveCoding
 
     public struct MessageQuacked : IDomainEvent
     {
-        public string Message { get; private set; }
+        public string Content { get; private set; }
 
-        public MessageQuacked(string message)
+        public MessageQuacked(string content)
         {
-            Message = message;
+            Content = content;
         }
     }
 
@@ -272,9 +287,9 @@ namespace CqrsLiveCoding
             _isDeleted = true;
         }
 
-        public static void Quack(IEventsPublisher eventsPublisher, string message)
+        public static void Quack(IEventsPublisher eventsPublisher, string content)
         {
-            eventsPublisher.Publish(new MessageQuacked(message));
+            eventsPublisher.Publish(new MessageQuacked(content));
         }
 
         public void Delete(IEventsPublisher eventsPublisher)
