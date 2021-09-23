@@ -9,13 +9,28 @@ namespace CqrsLiveCoding
         [Fact]
         public void RaiseMessageQuackedWhenQuackMessage()
         {
-            var eventsStore = new List<object>();
+            var history = new List<object>();
             
-            Message.Quack(eventsStore, "Hello");
+            Message.Quack(history, "Hello");
 
-            Check.That(eventsStore).ContainsExactly(new MessageQuacked("Hello"));
+            Check.That(history).ContainsExactly(new MessageQuacked("Hello"));
         }
-        
+
+        [Fact]
+        public void RaiseMessageDeletedWhenDeleteMessage()
+        {
+            var history = new List<object>();
+            history.Add(new MessageQuacked("Hello"));
+            var message = new Message(history);
+
+            message.Delete(history);
+
+            Check.That(history).Contains(new MessageDeleted());
+        }
+    }
+
+    public struct MessageDeleted
+    {
     }
 
     public struct MessageQuacked
@@ -30,9 +45,19 @@ namespace CqrsLiveCoding
 
     public class Message
     {
+        public Message(List<object> history)
+        {
+            
+        }
+
         public static void Quack(List<object> eventsStore, string message)
         {
             eventsStore.Add(new MessageQuacked(message));
+        }
+
+        public void Delete(List<object> eventsStore)
+        {
+            eventsStore.Add(new MessageDeleted());
         }
     }
 }
