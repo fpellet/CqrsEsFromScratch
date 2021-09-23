@@ -7,54 +7,49 @@ namespace CqrsLiveCoding
 {
     public class MessageShould
     {
-        private readonly List<IDomainEvent> _history = new List<IDomainEvent>();
+        private readonly EventsStreamFake _eventsStream = new EventsStreamFake();
 
         [Fact]
         public void RaiseMessageQuackedWhenQuackMessage()
         {
-            var history = _history;
-            
-            Message.Quack(history, "Hello");
+            Message.Quack(_eventsStream, "Hello");
 
-            Check.That(history).ContainsExactly(new MessageQuacked("Hello"));
+            Check.That(_eventsStream.History).ContainsExactly(new MessageQuacked("Hello"));
         }
 
         [Fact]
         public void RaiseMessageDeletedWhenDeleteMessage()
         {
-            var history = _history;
-            history.Add(new MessageQuacked("Hello"));
-            var message = new Message(history);
+            _eventsStream.Add(new MessageQuacked("Hello"));
+            var message = new Message(_eventsStream.History);
 
-            message.Delete(history);
+            message.Delete(_eventsStream);
 
-            Check.That(history).Contains(new MessageDeleted());
+            Check.That(_eventsStream.History).Contains(new MessageDeleted());
         }
 
         [Fact]
         public void NotRaiseDeletedWhenDeleteDeletedMessage()
         {
-            var history = _history;
-            history.Add(new MessageQuacked("Hello"));
-            history.Add(new MessageDeleted());
-            var message = new Message(history);
+            _eventsStream.Add(new MessageQuacked("Hello"));
+            _eventsStream.Add(new MessageDeleted());
+            var message = new Message(_eventsStream.History);
             
-            message.Delete(history);
+            message.Delete(_eventsStream);
 
-            Check.That(history.OfType<MessageDeleted>()).HasSize(1);
+            Check.That(_eventsStream.History.OfType<MessageDeleted>()).HasSize(1);
         }
 
         [Fact]
         public void NotRaiseDeletedWhenTwiceDeleteMessage()
         {
-            var history = _history;
-            history.Add(new MessageQuacked("Hello"));
-            var message = new Message(history);
+            _eventsStream.Add(new MessageQuacked("Hello"));
+            var message = new Message(_eventsStream.History);
             
-            message.Delete(history);
-            message.Delete(history);
+            message.Delete(_eventsStream);
+            message.Delete(_eventsStream);
 
-            Check.That(history.OfType<MessageDeleted>()).HasSize(1);
+            Check.That(_eventsStream.History.OfType<MessageDeleted>()).HasSize(1);
         }
     }
 
@@ -64,6 +59,21 @@ namespace CqrsLiveCoding
 
     public interface IDomainEvent
     {
+    }
+
+    public interface IEventsStream
+    {
+        void Add(IDomainEvent evt);
+    }
+    
+    public class EventsStreamFake : IEventsStream
+    {
+        public List<IDomainEvent> History { get; } = new List<IDomainEvent>();
+        
+        public void Add(IDomainEvent evt)
+        {
+            History.Add(evt);
+        }
     }
 
     public struct MessageQuacked : IDomainEvent
@@ -96,17 +106,17 @@ namespace CqrsLiveCoding
             _isDeleted = true;
         }
 
-        public static void Quack(List<IDomainEvent> eventsStore, string message)
+        public static void Quack(IEventsStream eventsStream, string message)
         {
-            eventsStore.Add(new MessageQuacked(message));
+            eventsStream.Add(new MessageQuacked(message));
         }
 
-        public void Delete(List<IDomainEvent> eventsStore)
+        public void Delete(IEventsStream eventsStream)
         {
             if (_isDeleted) return;
 
             var evt = new MessageDeleted();
-            eventsStore.Add(evt);
+            eventsStream.Add(evt);
             Apply(evt);
         }
     }
