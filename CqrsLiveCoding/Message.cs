@@ -6,5 +6,14 @@ namespace CqrsLiveCoding
 {
     public class MessageShould
     {
+        [Fact]
+        public void RaiseMessageQuackedWhenQuackMessage()
+        {
+            var eventsStore = new List<object>();
+            
+            Message.Quack(eventsStore, "Hello");
+
+            Check.That(eventsStore).ContainsExactly(new MessageQuacked("Hello"));
+        }
     }
 }
