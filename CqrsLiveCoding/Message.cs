@@ -30,13 +30,26 @@ namespace CqrsLiveCoding
         }
 
         [Fact]
-        public void RaiseNothingWhenDeleteDeletedMessage()
+        public void NotRaiseDeletedWhenDeleteDeletedMessage()
         {
             var history = new List<object>();
             history.Add(new MessageQuacked("Hello"));
             history.Add(new MessageDeleted());
             var message = new Message(history);
             
+            message.Delete(history);
+
+            Check.That(history.OfType<MessageDeleted>()).HasSize(1);
+        }
+
+        [Fact]
+        public void NotRaiseDeletedWhenTwiceDeleteMessage()
+        {
+            var history = new List<object>();
+            history.Add(new MessageQuacked("Hello"));
+            var message = new Message(history);
+            
+            message.Delete(history);
             message.Delete(history);
 
             Check.That(history.OfType<MessageDeleted>()).HasSize(1);
@@ -85,8 +98,10 @@ namespace CqrsLiveCoding
         public void Delete(List<object> eventsStore)
         {
             if (_isDeleted) return;
-            
-            eventsStore.Add(new MessageDeleted());
+
+            var evt = new MessageDeleted();
+            eventsStore.Add(evt);
+            Apply(evt);
         }
     }
 }
