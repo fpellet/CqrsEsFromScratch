@@ -7,10 +7,12 @@ namespace CqrsLiveCoding
 {
     public class MessageShould
     {
+        private readonly List<IDomainEvent> _history = new List<IDomainEvent>();
+
         [Fact]
         public void RaiseMessageQuackedWhenQuackMessage()
         {
-            var history = new List<object>();
+            var history = _history;
             
             Message.Quack(history, "Hello");
 
@@ -20,7 +22,7 @@ namespace CqrsLiveCoding
         [Fact]
         public void RaiseMessageDeletedWhenDeleteMessage()
         {
-            var history = new List<object>();
+            var history = _history;
             history.Add(new MessageQuacked("Hello"));
             var message = new Message(history);
 
@@ -32,7 +34,7 @@ namespace CqrsLiveCoding
         [Fact]
         public void NotRaiseDeletedWhenDeleteDeletedMessage()
         {
-            var history = new List<object>();
+            var history = _history;
             history.Add(new MessageQuacked("Hello"));
             history.Add(new MessageDeleted());
             var message = new Message(history);
@@ -45,7 +47,7 @@ namespace CqrsLiveCoding
         [Fact]
         public void NotRaiseDeletedWhenTwiceDeleteMessage()
         {
-            var history = new List<object>();
+            var history = _history;
             history.Add(new MessageQuacked("Hello"));
             var message = new Message(history);
             
@@ -56,11 +58,15 @@ namespace CqrsLiveCoding
         }
     }
 
-    public struct MessageDeleted
+    public struct MessageDeleted : IDomainEvent
     {
     }
 
-    public struct MessageQuacked
+    public interface IDomainEvent
+    {
+    }
+
+    public struct MessageQuacked : IDomainEvent
     {
         public string Message { get; private set; }
 
@@ -74,7 +80,7 @@ namespace CqrsLiveCoding
     {
         private bool _isDeleted = false;
 
-        public Message(List<object> history)
+        public Message(List<IDomainEvent> history)
         {
             foreach (var evt in history)
             {
@@ -90,12 +96,12 @@ namespace CqrsLiveCoding
             _isDeleted = true;
         }
 
-        public static void Quack(List<object> eventsStore, string message)
+        public static void Quack(List<IDomainEvent> eventsStore, string message)
         {
             eventsStore.Add(new MessageQuacked(message));
         }
 
-        public void Delete(List<object> eventsStore)
+        public void Delete(List<IDomainEvent> eventsStore)
         {
             if (_isDeleted) return;
 
