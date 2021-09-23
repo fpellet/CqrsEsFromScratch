@@ -15,5 +15,24 @@ namespace CqrsLiveCoding
 
             Check.That(eventsStore).ContainsExactly(new MessageQuacked("Hello"));
         }
+        
+    }
+
+    public struct MessageQuacked
+    {
+        public string Message { get; private set; }
+
+        public MessageQuacked(string message)
+        {
+            Message = message;
+        }
+    }
+
+    public class Message
+    {
+        public static void Quack(List<object> eventsStore, string message)
+        {
+            eventsStore.Add(new MessageQuacked(message));
+        }
     }
 }
