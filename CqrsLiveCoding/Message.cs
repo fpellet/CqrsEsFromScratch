@@ -5,6 +5,29 @@ using Xunit;
 
 namespace CqrsLiveCoding
 {
+    public class QuackCounterShould
+    {
+        [Fact]
+        public void IncrementWhenMessageQuacked()
+        {
+            var counter = new QuackCounter();
+
+            counter.When(new MessageQuacked("Hello"));
+
+            Check.That(counter.QuacksNb).IsEqualTo(1);
+        }
+    }
+
+    public class QuackCounter
+    {
+        public int QuacksNb { get; private set; }
+        
+        public void When(MessageQuacked evt)
+        {
+            QuacksNb++;
+        }
+    }
+
     public class MessageShould
     {
         private readonly EventsStreamFake _eventsStream = new EventsStreamFake();
